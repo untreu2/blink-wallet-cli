@@ -4,10 +4,6 @@ import subprocess
 import importlib
 
 def check_and_install_packages():
-    """
-    Checks if the required packages are installed.
-    If any are missing, prompts the user to install them and restarts the script.
-    """
     required_packages = {
         "dotenv": "python-dotenv",
         "requests": "requests",
@@ -44,36 +40,43 @@ def check_and_install_packages():
 
 def initialize_environment():
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
     return os.getenv("API_KEY")
 
 def check_and_set_api_key():
     api_key = os.getenv("API_KEY")
     if not api_key or api_key.strip() == "":
-        new_api_key = input("API Key missing. Please enter an API Key: ")
+        new_api_key = input("API Key missing. Please enter an API Key: ").strip()
+        if not new_api_key:
+            print("Invalid API Key. Exiting...")
+            sys.exit(1)
         update_env_file("API_KEY", new_api_key)
-        print("API Key successfully updated.")
+        print("API Key successfully updated. Restarting application...")
+        restart_application()
     else:
-        print("API Key exists.")
+        print(f"API Key found: {api_key}")
 
 def update_env_file(key, value):
     if not os.path.exists(".env"):
         with open(".env", "w") as file:
             file.write(f"{key}={value}\n")
-        return
-
-    with open(".env", "r") as file:
-        lines = file.readlines()
-    updated = False
-    with open(".env", "w") as file:
-        for line in lines:
-            if line.startswith(f"{key}="):
+    else:
+        with open(".env", "r") as file:
+            lines = file.readlines()
+        updated = False
+        with open(".env", "w") as file:
+            for line in lines:
+                if line.startswith(f"{key}="):
+                    file.write(f"{key}={value}\n")
+                    updated = True
+                else:
+                    file.write(line)
+            if not updated:
                 file.write(f"{key}={value}\n")
-                updated = True
-            else:
-                file.write(line)
-        if not updated:
-            file.write(f"{key}={value}\n")
+
+def restart_application():
+    print("Restarting application...")
+    os.execv(sys.executable, [sys.executable] + sys.argv)
 
 def select_operation():
     print("\nOperation options:")
@@ -95,9 +98,13 @@ def select_operation():
     elif choice == "4":
         os.system(f"{python_command} send.py")
     elif choice == "5":
-        new_api_key = input("Enter new API Key: ")
+        new_api_key = input("Enter new API Key: ").strip()
+        if not new_api_key:
+            print("Invalid API Key. Returning to menu...")
+            return
         update_env_file("API_KEY", new_api_key)
-        print("API Key successfully updated.")
+        print("API Key successfully updated. Restarting application...")
+        restart_application()
     else:
         print("Invalid selection. Please try again.")
 
@@ -108,7 +115,7 @@ def main():
     import requests
     import qrcode
 
-    auth_token = initialize_environment()
+    load_dotenv(override=True)
 
     check_and_set_api_key()
 
