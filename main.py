@@ -8,6 +8,7 @@ def check_and_install_packages():
         "dotenv": "python-dotenv",
         "requests": "requests",
         "qrcode": "qrcode",
+        "PIL": "pillow",
     }
 
     missing_packages = []
