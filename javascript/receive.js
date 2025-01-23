@@ -49,7 +49,7 @@ async function getWalletId(authToken) {
     }
 }
 
-async function createLightningInvoice(authToken, walletId, amountSatoshis) {
+async function createLightningInvoice(authToken, walletId, amountSatoshis, memo) {
     const url = "https://api.blink.sv/graphql";
 
     const headers = {
@@ -75,7 +75,8 @@ async function createLightningInvoice(authToken, walletId, amountSatoshis) {
     const variables = {
         input: {
             amount: amountSatoshis,
-            walletId: walletId
+            walletId: walletId,
+            memo: memo || "",
         }
     };
 
@@ -136,15 +137,17 @@ function askQuestion(query) {
 (async function main() {
     const walletId = await getWalletId(authToken);
     if (walletId) {
-        const input = await askQuestion("Enter the amount in satoshis: ");
-        const amountSatoshis = parseInt(input, 10);
+        const amountInput = await askQuestion("Enter the amount in satoshis: ");
+        const amountSatoshis = parseInt(amountInput, 10);
 
         if (isNaN(amountSatoshis)) {
             console.error("Invalid input. Please enter a numeric value.");
             return;
         }
 
-        const invoice = await createLightningInvoice(authToken, walletId, amountSatoshis);
+        const memo = await askQuestion("Enter a memo for the transaction (optional): ");
+
+        const invoice = await createLightningInvoice(authToken, walletId, amountSatoshis, memo);
 
         if (invoice) {
             console.log("Invoice created successfully:");
@@ -152,6 +155,7 @@ function askQuestion(query) {
             console.log("Payment Hash:", invoice.paymentHash);
             console.log("Payment Secret:", invoice.paymentSecret);
             console.log("Satoshis:", invoice.satoshis);
+            console.log("Memo:", memo);
 
             await displayQrCode(invoice.paymentRequest);
         }
